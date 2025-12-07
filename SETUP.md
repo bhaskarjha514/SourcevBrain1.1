@@ -18,7 +18,7 @@ Add this configuration:
 ```json
 {
   "mcpServers": {
-    "browser-error-debugging": {
+    "Devlopment&TestingAgent": {
       "command": "node",
       "args": [
         "/Users/bhaskarjha/personal/AIProjects/source/dist/index.js"
@@ -41,7 +41,7 @@ After adding the configuration, restart Cursor to load the MCP server.
 
 1. Open Cursor
 2. Check the MCP status (usually in the status bar or MCP panel)
-3. You should see "browser-error-debugging" listed as an available server
+3. You should see "Devlopment&TestingAgent" listed as an available server
 
 ## Step 4: Using the MCP Tools
 
@@ -80,9 +80,50 @@ Ask Cursor:
 Use mcp_run_feature_suite to test all these features: login, cart, checkout. Fix any errors automatically.
 ```
 
-## Workflow Example
+### Example 5: Build and Test Feature (Complete Workflow) ⭐ **NEW!**
 
-Here's a typical workflow:
+This is the **recommended workflow** for building features from scratch:
+
+Ask Cursor:
+```
+Use mcp_build_and_test_feature to build and test a login form with email and password fields. The feature name is "user login" and it should be at /login route.
+```
+
+Or with more details:
+```
+Use mcp_build_and_test_feature with this plan: "Create a shopping cart component that displays items, allows quantity updates, and shows total price. Include add/remove item functionality." Feature name: "shopping cart", URL: /cart
+```
+
+**What this does:**
+1. Generates implementation guidance using Gemini AI
+2. Provides step-by-step instructions for building the feature
+3. Waits for you/Cursor to implement it
+4. Automatically tests the feature
+5. Fixes any errors found
+6. Retests until it works completely
+
+## Workflow Examples
+
+### Workflow 1: Build from Scratch (Recommended)
+
+1. **Give Cursor a plan**:
+   ```
+   Use mcp_build_and_test_feature to build a user profile page with name, email, and avatar. Feature name: "user profile", URL: /profile
+   ```
+2. **The MCP server will**:
+   - Generate implementation guidance using Gemini AI
+   - Provide step-by-step instructions
+   - Wait for implementation (or proceed if code already exists)
+   - Test the feature automatically
+   - Fix any errors found
+   - Retest until it works completely
+3. **You get**:
+   - Implementation guidance
+   - Test results
+   - Automatic error fixes
+   - Confirmation when feature works
+
+### Workflow 2: Test Existing Code
 
 1. **You write code** for a new feature in Cursor
 2. **Ask Cursor to test it**:

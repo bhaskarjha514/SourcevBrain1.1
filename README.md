@@ -80,6 +80,33 @@ Run multiple features sequentially with auto-fix loop.
 - `features` (required): Array of feature test configurations
 - `maxIterations` (optional): Maximum fix iterations per feature
 
+### `mcp_build_and_test_feature` ⭐ **NEW!**
+
+Complete workflow: Takes a plan/description, provides implementation guidance, then tests and fixes until feature works. This is the recommended tool for building features from scratch.
+
+**Parameters:**
+- `plan` (required): Description or plan of the feature to build
+- `featureName` (required): Name of the feature for testing
+- `url` (optional): URL where the feature should be tested
+- `uiRules` (optional): UI validation rules to test the feature
+- `maxIterations` (optional): Maximum number of fix iterations (default: 5)
+- `waitForBuild` (optional): Whether to wait before testing (default: false)
+- `waitTime` (optional): Time to wait after navigation (ms, default: 2000)
+
+**Example:**
+```json
+{
+  "plan": "Create a login form with email and password fields",
+  "featureName": "user login",
+  "url": "/login",
+  "uiRules": [
+    { "selector": "#email", "action": "type", "value": "test@example.com" },
+    { "selector": "#password", "action": "type", "value": "password123" },
+    { "selector": "#login-button", "action": "click" }
+  ]
+}
+```
+
 ## Usage
 
 ### Running the MCP Server
@@ -93,9 +120,24 @@ Or in development mode:
 npm run dev
 ```
 
-### Example: Testing a Feature
+### Example: Building and Testing a Feature
 
-The MCP server can be called from Cursor or any MCP client. Example workflow:
+**Recommended workflow:**
+
+1. Use `mcp_build_and_test_feature` with a plan/description
+2. The server generates implementation guidance
+3. Implement the feature (manually or via Cursor)
+4. The server automatically tests, fixes errors, and retests until it works
+
+**Example:**
+```
+Use mcp_build_and_test_feature to build a shopping cart. 
+Plan: "Create a cart that shows items, allows quantity updates, and calculates total"
+Feature name: "shopping cart"
+URL: /cart
+```
+
+### Example: Testing an Existing Feature
 
 1. Use `mcp_test_feature` to test a feature
 2. If errors are found, use `mcp_fix_and_retest` to automatically fix and retest

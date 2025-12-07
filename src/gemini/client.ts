@@ -137,6 +137,29 @@ Only include the JSON, no other text. If you cannot determine the fix, return nu
     }
   }
 
+  async generateImplementationGuidance(plan: string, projectType: string = 'React'): Promise<string> {
+    const prompt = `You are a software development assistant. Given the following feature plan, provide detailed implementation guidance:
+
+Plan: ${plan}
+Project Type: ${projectType}
+
+Provide:
+1. A step-by-step implementation plan
+2. Key files that need to be created or modified
+3. Important considerations and best practices
+4. Testing requirements
+
+Be specific and actionable. Format the response clearly with sections.`;
+
+    try {
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      throw new Error(`Gemini API error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   private formatErrorsForAnalysis(errors: ErrorCollection): string {
     if (errors.errors.length === 0) {
       return 'No errors detected.';

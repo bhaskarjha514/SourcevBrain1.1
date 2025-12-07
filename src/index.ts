@@ -23,7 +23,7 @@ class BrowserErrorDebuggingServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'browser-error-debugging',
+        name: 'Devlopment&TestingAgent',
         version: '1.0.0',
       },
       {
@@ -168,6 +168,54 @@ class BrowserErrorDebuggingServer {
             required: ['features'],
           },
         },
+        {
+          name: 'mcp_build_and_test_feature',
+          description: 'Complete workflow: Takes a plan/description, provides implementation guidance, then tests and fixes until feature works. Use this when you want to build a feature from scratch and have it automatically tested and fixed.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              plan: {
+                type: 'string',
+                description: 'Description or plan of the feature to build (e.g., "Create a login form with email and password fields")',
+              },
+              featureName: {
+                type: 'string',
+                description: 'Name of the feature for testing purposes',
+              },
+              url: {
+                type: 'string',
+                description: 'URL where the feature should be tested (optional, uses dev server URL if not provided)',
+              },
+              uiRules: {
+                type: 'array',
+                description: 'UI validation rules to test the feature (optional)',
+                items: {
+                  type: 'object',
+                  properties: {
+                    selector: { type: 'string' },
+                    action: { type: 'string', enum: ['click', 'type', 'wait', 'check'] },
+                    value: { type: 'string' },
+                    expected: { type: 'string' },
+                    timeout: { type: 'number' },
+                  },
+                },
+              },
+              maxIterations: {
+                type: 'number',
+                description: 'Maximum number of fix iterations (default: 5)',
+              },
+              waitForBuild: {
+                type: 'boolean',
+                description: 'Whether to wait before testing (set to true if code needs to be built first, default: false)',
+              },
+              waitTime: {
+                type: 'number',
+                description: 'Time to wait after navigation before testing (ms, default: 2000)',
+              },
+            },
+            required: ['plan', 'featureName'],
+          },
+        },
       ],
     }));
 
@@ -184,6 +232,8 @@ class BrowserErrorDebuggingServer {
             return await this.handleFixAndRetest(args as any);
           case 'mcp_run_feature_suite':
             return await this.handleRunFeatureSuite(args as any);
+          case 'mcp_build_and_test_feature':
+            return await this.handleBuildAndTestFeature(args as any);
           default:
             throw new McpError(
               ErrorCode.MethodNotFound,
@@ -419,10 +469,122 @@ class BrowserErrorDebuggingServer {
     };
   }
 
+  private async handleBuildAndTestFeature(args: {
+    plan: string;
+    featureName: string;
+    url?: string;
+    uiRules?: any[];
+    maxIterations?: number;
+    waitForBuild?: boolean;
+    waitTime?: number;
+  }): Promise<{ content: Array<{ type: string; text: string }> }> {
+    const { GeminiClient } = await import('./gemini/client.js');
+    const geminiClient = new GeminiClient();
+    
+    const implementationGuidance = await geminiClient.generateImplementationGuidance(args.plan);
+    
+    const response: any = {
+      phase: 'implementation_guidance',
+      guidance: implementationGuidance,
+      message: 'Please implement the feature based on the guidance above. The system will then test and fix any errors automatically.',
+    };
+
+    if (args.waitForBuild) {
+      response.waitMessage = 'Waiting for implementation to complete...';
+      await new Promise((resolve) => setTimeout(resolve, args.waitTime || 5000));
+    }
+
+    await this.ensureBrowser();
+    await this.devServer.ensureServerRunning();
+
+    const testRunner = new TestRunner(this.browser!);
+    const maxIterations = args.maxIterations || this.config.test.maxRetryAttempts;
+    
+    const feature: FeatureTest = {
+      name: args.featureName,
+      url: args.url || this.config.devServer.url,
+      uiRules: args.uiRules,
+      waitTime: args.waitTime || 2000,
+    };
+
+    let iteration = 0;
+    let lastResult: any = null;
+    const fixHistory: any[] = [];
+
+    while (iteration < maxIterations) {
+      iteration++;
+
+      const result = await testRunner.testFeature(feature);
+      lastResult = result;
+
+      if (result.success) {
+        response.phase = 'complete';
+        response.success = true;
+        response.iterations = iteration;
+        response.fixHistory = fixHistory;
+        response.message = `Feature "${args.featureName}" is working correctly after ${iteration} iteration(s).`;
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(response, null, 2),
+            },
+          ],
+        };
+      }
+
+      const fixResult = await this.cursorIntegration.fixError(result.errors);
+
+      if (!fixResult.success) {
+        response.phase = 'failed';
+        response.success = false;
+        response.iterations = iteration;
+        response.error = fixResult.error;
+        response.lastErrors = result.errors;
+        response.fixHistory = fixHistory;
+        response.message = `Failed to fix errors after ${iteration} iteration(s).`;
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(response, null, 2),
+            },
+          ],
+        };
+      }
+
+      fixHistory.push({
+        iteration,
+        fix: fixResult.fix,
+        errorsFixed: result.errors.summary,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    response.phase = 'max_iterations_reached';
+    response.success = false;
+    response.iterations = maxIterations;
+    response.lastErrors = lastResult?.errors;
+    response.fixHistory = fixHistory;
+    response.message = `Reached maximum iterations (${maxIterations}) without success.`;
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2),
+        },
+      ],
+    };
+  }
+
   async run(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('Browser Error Debugging MCP Server running on stdio');
+    console.error('Devlopment&TestingAgent MCP Server running on stdio');
   }
 
   async cleanup(): Promise<void> {

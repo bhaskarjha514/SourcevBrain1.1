@@ -1,12 +1,13 @@
 {
   "mcpServers": {
-    "browser-error-debugging": {
+    "Devlopment&TestingAgent": {
       "command": "node",
       "args": [
         "/Users/bhaskarjha/personal/AIProjects/source/dist/index.js"
       ],
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "GEMINI_API_KEY": "AIzaSyATQ-TBOUZjYTl4WeWrx9zaIsd4GCbDACw"
       }
     }
   }
