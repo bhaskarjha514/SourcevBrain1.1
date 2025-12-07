@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "browser-error-debugging": {
+      "command": "node",
+      "args": [
+        "/Users/bhaskarjha/personal/AIProjects/source/dist/index.js"
+      ],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
+
